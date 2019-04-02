@@ -1,0 +1,36 @@
+import torch
+import numpy as np
+from torch.autograd import Variable
+
+# unordered list (batch) of random sized arrays
+batch_size = 4
+max_length = 4
+sequences = [
+    np.random.randn(np.random.randint(1, max_length+1))
+    for _ in range(batch_size)
+]
+
+# reverse ordered by `len`
+ordered = sorted(sequences, key=len, reverse=True)
+lengths = [len(x) for x in ordered]
+
+# each element padded to `max_length`
+padded = [
+    np.pad(li, pad_width=(0, max_length-len(li)), mode='constant')
+    for li in ordered
+]
+
+# Convert each array to `torch.Tensor`
+tensors = [
+    torch.from_numpy(ar)
+    for ar in padded
+]
+
+# stack to matrix Variable
+batch = Variable(torch.stack(tensors))
+# add extra dim necessary to use with RNNs
+# as pointed out by /u/kaushalshetty
+batch = batch[:, :, None]
+
+# pack it
+pack = torch.nn.utils.rnn.pack_padded_sequence(batch, lengths, batch_first=True)
